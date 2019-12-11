@@ -18,7 +18,7 @@ When using solely ElasticSearch as the primary database without another SQL data
 
 ### Usage
 
-Static generator class `Snowflake` uses an instance of `SnowflakeInstance` bound to the calling thread, with generator ID configured using cryptographically secure RNG.
+Static generator class `Snowflake` uses an instance of `SnowflakeInstance` bound to the calling thread, with generator ID configured using the calling thread's ID.
 
 ```csharp
 using ChiyaFlake;

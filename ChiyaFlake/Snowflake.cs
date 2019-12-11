@@ -3,13 +3,21 @@ using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Threading;
 
+// ReSharper disable CommentTypo
+// ReSharper disable IdentifierTypo
+// ReSharper disable UnusedMember.Global
+// ReSharper disable once CheckNamespace
 namespace ChiyaFlake
 {
+    // ChiyaFlake by **chiya.dev**
+    // GitHub: https://github.com/chiyadev/ChiyaFlake
+
     /// <summary><a href="https://github.com/chiyadev/ChiyaFlake">ChiyaFlake</a> static snowflake generator.</summary>
     /// <remarks>This class uses <see cref="SnowflakeInstance"/> bound to the calling thread.</remarks>
     public static class Snowflake
     {
-        static readonly ThreadLocal<ISnowflake> _snowflake = new ThreadLocal<ISnowflake>(() => new SnowflakeInstance());
+        static readonly int _idOffset = SnowflakeInstance.RandomByte();
+        static readonly ThreadLocal<ISnowflake> _snowflake = new ThreadLocal<ISnowflake>(() => new SnowflakeInstance((Thread.CurrentThread.ManagedThreadId + _idOffset) % 64));
 
         /// <inheritdoc cref="ISnowflake.Timestamp"/>
         public static long Timestamp => _snowflake.Value.Timestamp;
@@ -38,9 +46,9 @@ namespace ChiyaFlake
         /// <summary>Initializes a new <see cref="Snowflake"/> instance with generator ID and epoch time.</summary>
         /// <param name="id">6-bit generator ID (0 to 63), or null to use a cryptographically secure random ID.</param>
         /// <param name="epoch">Epoch time, or null to use 2000/01/01.</param>
-        public SnowflakeInstance(byte? id = null, DateTimeOffset? epoch = null)
+        public SnowflakeInstance(int? id = null, DateTimeOffset? epoch = null)
         {
-            id    = id ?? (byte) (RandomByte() % 64);
+            id    = id ?? RandomByte() % 64;
             epoch = epoch ?? new DateTime(2000, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
             if (id.Value >= 64) throw new ArgumentOutOfRangeException(nameof(id), id, $"{nameof(id)} must be in the range [0, 63].");
@@ -49,7 +57,7 @@ namespace ChiyaFlake
             _offset = DateTime.UtcNow - epoch.Value.ToUniversalTime();
         }
 
-        static byte RandomByte()
+        internal static byte RandomByte()
         {
             using (var rand = new RNGCryptoServiceProvider())
             {
