@@ -8,34 +8,29 @@ namespace Test
 {
     public class Stress
     {
-        const double _duration = 2;
+        const double _duration = 5;
 
         [Test]
         public void StressOneInstance()
         {
             var snowflake = new SnowflakeInstance();
 
-            Run(() => snowflake.New);
+            Run(() => snowflake.Timestamp);
         }
 
         [Test]
         public void StressMultiThread()
-        {
-            var id        = 0;
-            var snowflake = new ThreadLocal<ISnowflake>(() => new SnowflakeInstance((byte) (Interlocked.Increment(ref id) % 64)));
+            => Run(() => Snowflake.Timestamp);
 
-            Run(() => snowflake.Value.New);
-        }
-
-        static void Run(Func<string> generate)
+        static void Run(Func<long> timestamp)
         {
             var end = DateTime.Now.AddSeconds(_duration);
 
             var threads = new Thread[Environment.ProcessorCount];
 
-            var cache = new ConcurrentDictionary<string, object>();
+            var cache = new ConcurrentDictionary<long, object>();
 
-            var duplicate = null as string;
+            var duplicate = 0L;
 
             for (var i = 0; i < threads.Length; i++)
             {
@@ -47,7 +42,7 @@ namespace Test
                     {
                         now = DateTime.Now;
 
-                        var x = generate();
+                        var x = timestamp();
 
                         if (!cache.TryAdd(x, null))
                         {
@@ -69,7 +64,7 @@ namespace Test
             foreach (var thread in threads)
                 thread.Join();
 
-            Assert.Null(duplicate, $"Duplicate snowflake: {duplicate}");
+            Assert.Zero(duplicate, $"Duplicate snowflake: {duplicate}");
         }
     }
 }
