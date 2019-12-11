@@ -14,7 +14,7 @@ When using solely ElasticSearch as the primary database without another SQL data
 
 ### Installation
 
-0. Copy [Snowflake.cs](ChiyaFlake/Snowflake.cs) into your project.
+0. Copy [Snowflake.cs](https://raw.githubusercontent.com/chiyadev/ChiyaFlake/master/ChiyaFlake/Snowflake.cs) into your project.
 
 ### Usage
 
