@@ -6,7 +6,7 @@ using System.Threading;
 namespace ChiyaFlake
 {
     /// <summary><a href="https://github.com/chiyadev/ChiyaFlake">ChiyaFlake</a> static snowflake generator.</summary>
-    /// <remarks>This class uses <see cref="SnowflakeInstance"/> bound to the caller's thread.</remarks>
+    /// <remarks>This class uses <see cref="SnowflakeInstance"/> bound to the calling thread.</remarks>
     public static class Snowflake
     {
         static readonly ThreadLocal<ISnowflake> _snowflake = new ThreadLocal<ISnowflake>(() => new SnowflakeInstance());
@@ -36,7 +36,7 @@ namespace ChiyaFlake
         readonly Stopwatch _watch = Stopwatch.StartNew();
 
         /// <summary>Initializes a new <see cref="Snowflake"/> instance with generator ID and epoch time.</summary>
-        /// <param name="id">6-bit generator ID (0 to 63), or null to use a cryptographically random ID.</param>
+        /// <param name="id">6-bit generator ID (0 to 63), or null to use a cryptographically secure random ID.</param>
         /// <param name="epoch">Epoch time, or null to use 2000/01/01.</param>
         public SnowflakeInstance(byte? id = null, DateTimeOffset? epoch = null)
         {
