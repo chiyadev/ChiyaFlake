@@ -35,6 +35,9 @@ namespace ChiyaFlake
         /// <inheritdoc cref="ISnowflake.New"/>
         public static string New => _snowflake.Value.New;
 
+        /// <inheritdoc cref="ISnowflake.IsValid"/>
+        public static bool IsValid(string value) => _snowflake.Value.IsValid(value);
+
         /// <summary>Defines the maximum possible length of snowflake strings.</summary>
         public static int MaxLength { get; } = (new MaxSnowflake() as ISnowflake).New.Length;
 
@@ -64,6 +67,29 @@ namespace ChiyaFlake
 
                 return Convert.ToBase64String(buffer, offset, buffer.Length - offset).TrimEnd('=').Replace("/", "_").Replace("+", "-");
             }
+        }
+
+        /// <summary>Determines whether the given value is a valid snowflake string.</summary>
+        /// <param name="value">Snowflake string.</param>
+        /// <returns>Whether <paramref name="value"/> is valid.</returns>
+        // ReSharper disable once MemberCanBeMadeStatic.Global
+        bool IsValid(string value)
+        {
+            // ReSharper disable once ForeachCanBeConvertedToQueryUsingAnotherGetEnumerator
+            foreach (var c in value)
+            {
+                // url-safe base64
+                if ('A' <= c && c <= 'Z' ||
+                    'a' <= c && c <= 'z' ||
+                    '0' <= c && c <= '9' ||
+                    '_' == c ||
+                    '-' == c)
+                    continue;
+
+                return false;
+            }
+
+            return true;
         }
     }
 
