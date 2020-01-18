@@ -16,7 +16,17 @@ namespace ChiyaFlake
     /// <remarks>This class uses <see cref="SnowflakeInstance"/> bound to the calling thread.</remarks>
     public static class Snowflake
     {
-        static readonly int _idOffset = SnowflakeInstance.RandomByte();
+        internal static byte RandomByte()
+        {
+            using var rand = new RNGCryptoServiceProvider();
+
+            var buffer = new byte[1];
+            rand.GetBytes(buffer);
+
+            return buffer[0];
+        }
+
+        static readonly int _idOffset = RandomByte();
         static readonly ThreadLocal<ISnowflake> _snowflake = new ThreadLocal<ISnowflake>(() => new SnowflakeInstance((Thread.CurrentThread.ManagedThreadId + _idOffset) % 64));
 
         /// <inheritdoc cref="ISnowflake.Timestamp"/>
@@ -24,6 +34,14 @@ namespace ChiyaFlake
 
         /// <inheritdoc cref="ISnowflake.New"/>
         public static string New => _snowflake.Value.New;
+
+        /// <summary>Defines the maximum possible length of snowflake strings.</summary>
+        public static int MaxLength { get; } = (new MaxSnowflake() as ISnowflake).New.Length;
+
+        sealed class MaxSnowflake : ISnowflake
+        {
+            long ISnowflake.Timestamp => long.MaxValue;
+        }
     }
 
     /// <summary><a href="https://github.com/chiyadev/ChiyaFlake">ChiyaFlake</a> snowflake generator interface.</summary>
@@ -33,7 +51,20 @@ namespace ChiyaFlake
         long Timestamp { get; }
 
         /// <summary>Gets a short base64-encoded URL-safe snowflake string generated using <see cref="Timestamp"/>.</summary>
-        string New { get; }
+        string New
+        {
+            get
+            {
+                var buffer = BitConverter.GetBytes(Timestamp);
+
+                if (BitConverter.IsLittleEndian)
+                    Array.Reverse(buffer);
+
+                var offset = Array.FindIndex(buffer, x => x != 0);
+
+                return Convert.ToBase64String(buffer, offset, buffer.Length - offset).TrimEnd('=').Replace("/", "_").Replace("+", "-");
+            }
+        }
     }
 
     /// <summary><a href="https://github.com/chiyadev/ChiyaFlake">ChiyaFlake</a> snowflake generator instance.</summary>
@@ -48,23 +79,14 @@ namespace ChiyaFlake
         /// <param name="epoch">Epoch time, or null to use 2000/01/01.</param>
         public SnowflakeInstance(int? id = null, DateTimeOffset? epoch = null)
         {
-            id    = id ?? RandomByte() % 64;
-            epoch = epoch ?? new DateTime(2000, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            id    ??= Snowflake.RandomByte() % 64;
+            epoch ??= new DateTime(2000, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
-            if (id.Value >= 64) throw new ArgumentOutOfRangeException(nameof(id), id, $"{nameof(id)} must be in the range [0, 63].");
+            if (id.Value >= 64)
+                throw new ArgumentOutOfRangeException(nameof(id), id, $"{nameof(id)} must be in the range [0, 63].");
 
             _id     = id.Value;
             _offset = DateTime.UtcNow - epoch.Value.ToUniversalTime();
-        }
-
-        internal static byte RandomByte()
-        {
-            using (var rand = new RNGCryptoServiceProvider())
-            {
-                var buffer = new byte[1];
-                rand.GetBytes(buffer);
-                return buffer[0];
-            }
         }
 
         long _lastTimestamp;
@@ -86,22 +108,6 @@ namespace ChiyaFlake
                 while (Interlocked.CompareExchange(ref _lastTimestamp, current, original) > original);
 
                 return (current << 6) | _id;
-            }
-        }
-
-        /// <inheritdoc cref="ISnowflake.New"/>
-        public string New
-        {
-            get
-            {
-                var buffer = BitConverter.GetBytes(Timestamp);
-
-                if (BitConverter.IsLittleEndian)
-                    Array.Reverse(buffer);
-
-                var offset = Array.FindIndex(buffer, x => x != 0);
-
-                return Convert.ToBase64String(buffer, offset, buffer.Length - offset).TrimEnd('=').Replace("/", "_").Replace("+", "-");
             }
         }
     }
