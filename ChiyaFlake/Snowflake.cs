@@ -75,6 +75,9 @@ namespace ChiyaFlake
         // ReSharper disable once MemberCanBeMadeStatic.Global
         bool IsValid(string value)
         {
+            if (string.IsNullOrEmpty(value) || value.Length > Snowflake.MaxLength)
+                return false;
+
             // ReSharper disable once ForeachCanBeConvertedToQueryUsingAnotherGetEnumerator
             foreach (var c in value)
             {
