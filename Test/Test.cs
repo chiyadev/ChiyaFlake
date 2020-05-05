@@ -6,6 +6,7 @@ using NUnit.Framework;
 
 namespace Test
 {
+    [Parallelizable(ParallelScope.All)]
     public class Tests
     {
         [Test]

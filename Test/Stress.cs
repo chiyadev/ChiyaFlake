@@ -6,6 +6,7 @@ using NUnit.Framework;
 
 namespace Test
 {
+    [Parallelizable(ParallelScope.All)]
     public class Stress
     {
         const double _duration = 5;
