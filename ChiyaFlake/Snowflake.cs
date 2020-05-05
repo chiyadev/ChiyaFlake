@@ -3,10 +3,7 @@ using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Threading;
 
-// ReSharper disable CommentTypo
-// ReSharper disable IdentifierTypo
-// ReSharper disable UnusedMember.Global
-// ReSharper disable once CheckNamespace
+// ReSharper disable All
 namespace ChiyaFlake
 {
     // ChiyaFlake by **chiya.dev**
@@ -72,13 +69,11 @@ namespace ChiyaFlake
         /// <summary>Determines whether the given value is a valid snowflake string.</summary>
         /// <param name="value">Snowflake string.</param>
         /// <returns>Whether <paramref name="value"/> is valid.</returns>
-        // ReSharper disable once MemberCanBeMadeStatic.Global
         bool IsValid(string value)
         {
             if (string.IsNullOrEmpty(value) || value.Length > Snowflake.MaxLength)
                 return false;
 
-            // ReSharper disable once ForeachCanBeConvertedToQueryUsingAnotherGetEnumerator
             foreach (var c in value)
             {
                 // url-safe base64

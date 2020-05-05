@@ -88,7 +88,7 @@ namespace Test
             Print(snowflake);
         }
 
-        static void Print(SnowflakeInstance snowflake)
+        static void Print(ISnowflake snowflake)
         {
             var stopwatch = Stopwatch.StartNew();
 
