@@ -4,36 +4,35 @@ using System.Security.Cryptography;
 using System.Threading;
 
 // ReSharper disable All
+
 namespace ChiyaFlake
 {
     // ChiyaFlake by **chiya.dev**
     // GitHub: https://github.com/chiyadev/ChiyaFlake
 
     /// <summary><a href="https://github.com/chiyadev/ChiyaFlake">ChiyaFlake</a> static snowflake generator.</summary>
-    /// <remarks>This class uses <see cref="SnowflakeInstance"/> bound to the calling thread.</remarks>
     public static class Snowflake
     {
-        internal static byte RandomByte()
+        static int _offset = RandomNumberGenerator.GetInt32(int.MaxValue);
+        static readonly ISnowflake[] _instances = new ISnowflake[64];
+
+        static Snowflake()
         {
-            using var rand = new RNGCryptoServiceProvider();
-
-            var buffer = new byte[1];
-            rand.GetBytes(buffer);
-
-            return buffer[0];
+            for (var i = 0; i < _instances.Length; i++)
+                _instances[i] = new SnowflakeInstance(i);
         }
 
-        static readonly int _idOffset = RandomByte();
-        static readonly ThreadLocal<ISnowflake> _snowflake = new ThreadLocal<ISnowflake>(() => new SnowflakeInstance((Thread.CurrentThread.ManagedThreadId + _idOffset) % 64));
+        /// <summary><see cref="ISnowflake"/> instance used to generate values.</summary>
+        public static ISnowflake Current => _instances[Math.Abs(Interlocked.Increment(ref _offset) % _instances.Length)];
 
         /// <inheritdoc cref="ISnowflake.Timestamp"/>
-        public static long Timestamp => _snowflake.Value.Timestamp;
+        public static long Timestamp => Current.Timestamp;
 
         /// <inheritdoc cref="ISnowflake.New"/>
-        public static string New => _snowflake.Value.New;
+        public static string New => Current.New;
 
         /// <inheritdoc cref="ISnowflake.IsValid"/>
-        public static bool IsValid(string value) => _snowflake.Value.IsValid(value);
+        public static bool IsValid(string value) => Current.IsValid(value);
 
         /// <summary>Defines the maximum possible length of snowflake strings.</summary>
         public static int MaxLength { get; } = (new MaxSnowflake() as ISnowflake).New.Length;
@@ -99,11 +98,11 @@ namespace ChiyaFlake
         readonly Stopwatch _watch = Stopwatch.StartNew();
 
         /// <summary>Initializes a new <see cref="Snowflake"/> instance with generator ID and epoch time.</summary>
-        /// <param name="id">6-bit generator ID (0 to 63), or null to use a cryptographically secure random ID.</param>
+        /// <param name="id">6-bit generator ID [0, 64), or null to use a cryptographically secure random ID.</param>
         /// <param name="epoch">Epoch time, or null to use 2000/01/01.</param>
         public SnowflakeInstance(int? id = null, DateTimeOffset? epoch = null)
         {
-            id    ??= Snowflake.RandomByte() % 64;
+            id    ??= RandomNumberGenerator.GetInt32(64);
             epoch ??= new DateTime(2000, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
             if (id.Value >= 64)
